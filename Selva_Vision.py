@@ -1,69 +1,66 @@
 import streamlit as st
-import json
 from datetime import datetime
-import os
 from typing import List, Dict, Any
+import html 
 
-# ── configuração e caminhos ───────────────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-HISTORY_FILE = os.path.join(BASE_DIR, "historico_prompts_local.json")
+# ── configuração ──────────────────────────────────────────────────────────────
 MAX_EXTRA_FURNITURE = 5
 
 st.set_page_config(page_title="selva vision", page_icon="✦", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Inter:wght@300;400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;}
 html,body,.stApp{background:#161615!important;color:#EAE8E3!important;font-family:'Inter',sans-serif!important;}
 .stApp::before{display:none!important;}
 .arch-header{text-align:center;padding:2.5rem 1rem 1.5rem;}
-.arch-header h1{font-family:'Montserrat',sans-serif;font-size:3rem;font-weight:500;letter-spacing:-0.05em;
-color:#EAE8E3!important;line-height:1.1;margin-bottom:0.4rem;text-transform:lowercase;}
+.arch-header h1{font-family:'Montserrat',sans-serif;font-size:3rem;font-weight:500;letter-spacing:-0.05em;color:#EAE8E3!important;line-height:1.1;margin-bottom:0.4rem;text-transform:lowercase;}
 .arch-header p{color:#8C8881;font-size:0.9rem;font-family:'Inter',sans-serif;letter-spacing:0.02em;text-transform:lowercase;}
-.arch-badge{display:inline-block;background:#1C1B1A;border:1px solid #213326;color:#8C8881;
-font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.1em;padding:4px 14px;margin-bottom:1.2rem;text-transform:lowercase;}
-.layer-label{font-family:'Montserrat',sans-serif!important;font-size:0.75rem;letter-spacing:0.1em;text-transform:lowercase;
-color:#8C8881!important;margin:1.4rem 0 0.8rem;display:flex;align-items:center;gap:8px;}
-.layer-num{background:#1C1B1A!important;border:1px solid #213326!important;color:#EAE8E3!important;
-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;flex-shrink:0;}
-.furn-label{font-family:'Montserrat',sans-serif!important;font-size:0.7rem;letter-spacing:0.1em;
-text-transform:lowercase;color:#8C8881!important;margin:1rem 0 0.6rem;}
+.arch-badge{display:inline-block;background:#1C1B1A;border:1px solid #213326;color:#8C8881;font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.1em;padding:4px 14px;margin-bottom:1.2rem;text-transform:lowercase;}
+.layer-label{font-family:'Montserrat',sans-serif!important;font-size:0.75rem;letter-spacing:0.1em;text-transform:lowercase;color:#8C8881!important;margin:1.4rem 0 0.8rem;display:flex;align-items:center;gap:8px;}
+.layer-num{background:#1C1B1A!important;border:1px solid #213326!important;color:#EAE8E3!important;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;flex-shrink:0;}
+.furn-label{font-family:'Montserrat',sans-serif!important;font-size:0.7rem;letter-spacing:0.1em;text-transform:lowercase;color:#8C8881!important;margin:1rem 0 0.6rem;}
 .prompt-panel{background:#1C1B1A!important;padding:1.4rem;position:sticky;top:1rem;}
-.prompt-live-label{font-family:'Inter',sans-serif!important;font-size:0.7rem;letter-spacing:0.1em;text-transform:lowercase;
-color:#8C8881!important;display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;}
+.prompt-live-label{font-family:'Inter',sans-serif!important;font-size:0.7rem;letter-spacing:0.1em;text-transform:lowercase;color:#8C8881!important;display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;}
 .meta-count{font-family:'Inter',sans-serif!important;font-size:0.65rem;color:#8C8881!important;margin:3px 0 10px;text-transform:lowercase;}
 .section-sep{border:none!important;border-top:1px solid rgba(255,255,255,0.05)!important;margin:1rem 0;}
-.hist-prompt{font-family:'Inter',sans-serif!important;font-size:0.75rem;color:#EAE8E3!important;line-height:1.7;
-background:#1C1B1A!important;padding:0.8rem;margin:0.5rem 0;white-space:pre-wrap;word-break:break-word;}
-.stSelectbox>label,.stTextInput>label,.stTextArea>label,.stMultiSelect>label{
-font-family:'Inter',sans-serif!important;font-size:0.75rem!important;letter-spacing:0.02em!important;
-color:#8C8881!important;text-transform:lowercase!important;}
-.stSelectbox>div>div,.stTextInput>div>div>input,.stTextArea>div>div>textarea{
-background:#121211!important;border:1px solid #2A2928!important;border-radius:0px!important;
-color:#EAE8E3!important;font-family:'Inter',sans-serif!important;}
-.stTextInput>div>div>input:focus,.stTextArea>div>div>textarea:focus,.stSelectbox>div[aria-expanded="true"]{
-outline:none!important;border:1px solid #C49A6C!important;box-shadow:none!important;}
-.stButton>button{background:#213326!important;color:#EAE8E3!important;border:none!important;border-radius:0px!important;
-font-family:'Inter',sans-serif!important;font-weight:400!important;font-size:0.85rem!important;
-text-transform:lowercase!important;transition:all 0.2s ease-in-out!important;}
+.hist-prompt{font-family:'Inter',sans-serif!important;font-size:0.75rem;color:#EAE8E3!important;line-height:1.7;background:#1C1B1A!important;padding:0.8rem;margin:0.5rem 0;white-space:pre-wrap;word-break:break-word;}
+.stSelectbox>label,.stTextInput>label,.stTextArea>label,.stMultiSelect>label{font-family:'Inter',sans-serif!important;font-size:0.75rem!important;letter-spacing:0.02em!important;color:#8C8881!important;text-transform:lowercase!important;}
+.stSelectbox>div>div,.stTextInput>div>div>input,.stTextArea>div>div>textarea{background:#121211!important;border:1px solid #2A2928!important;border-radius:0px!important;color:#EAE8E3!important;font-family:'Inter',sans-serif!important;}
+.stTextInput>div>div>input:focus,.stTextArea>div>div>textarea:focus,.stSelectbox>div[aria-expanded="true"]{outline:none!important;border:1px solid #C49A6C!important;box-shadow:none!important;}
+.stButton>button{background:#213326!important;color:#EAE8E3!important;border:none!important;border-radius:0px!important;font-family:'Inter',sans-serif!important;font-weight:400!important;font-size:0.85rem!important;text-transform:lowercase!important;transition:all 0.2s ease-in-out!important;}
 .stButton>button:hover{background:#1A291E!important;}
 .stTabs [data-baseweb="tab-list"]{background:none!important;padding:0!important;border:none!important;margin-bottom:1rem;gap:1.5rem;}
-.stTabs [data-baseweb="tab"]{font-family:'Inter',sans-serif!important;font-size:0.8rem!important;
-letter-spacing:0.05em!important;color:#8C8881!important;background:none!important;padding-bottom:0.5rem;text-transform:lowercase!important;}
+.stTabs [data-baseweb="tab"]{font-family:'Inter',sans-serif!important;font-size:0.8rem!important;letter-spacing:0.05em!important;color:#8C8881!important;background:none!important;padding-bottom:0.5rem;text-transform:lowercase!important;}
 .stTabs [aria-selected="true"]{color:#EAE8E3!important;border-bottom:1px solid #C49A6C!important;}
 #MainMenu,footer,header{visibility:hidden;}
 .block-container{padding-top:0!important;max-width:1400px!important;}
+div[data-testid="stCodeBlock"]{background-color:#121211!important;border:1px solid #2A2928!important;border-radius:0px!important;}
+div[data-testid="stCodeBlock"] pre{background-color:transparent!important;white-space:pre-wrap!important;word-wrap:break-word!important;overflow-x:hidden!important;}
+div[data-testid="stCodeBlock"] code{white-space:pre-wrap!important;word-wrap:break-word!important;color:#EAE8E3!important;font-family:'Inter',sans-serif!important;font-size:0.85rem!important;}
+.footer-container{display:flex;justify-content:space-between;margin-top:5rem;padding-top:3rem;border-top:1px solid #2A2928;color:#8C8881;font-family:'Inter',sans-serif;font-size:0.85rem;text-transform:lowercase;}
+.footer-col{display:flex;flex-direction:column;gap:2rem;}
+.footer-col-right{text-align:right;}
+.footer-title{font-family:'Montserrat',sans-serif;font-size:1.1rem;color:#EAE8E3;margin-bottom:0.8rem;font-weight:400;letter-spacing:0.15em;text-transform:lowercase;}
+.footer-text{margin:0.3rem 0;line-height:1.5;}
+.footer-socials{display:flex;gap:1.2rem;font-size:1.5rem;margin-top:0.5rem;}
+.footer-col-right .footer-socials{justify-content:flex-end;}
+.footer-socials a{color:#EAE8E3;transition:color 0.2s ease;text-decoration:none;}
+.footer-socials a:hover{color:#C49A6C;}
+.footer-copy{text-align:right;margin-top:3rem;margin-bottom:2rem;font-size:0.75rem;color:#8C8881;text-transform:lowercase;}
+@media(max-width:768px){.footer-container{flex-direction:column;gap:2.5rem;}.footer-col-right{text-align:left;}.footer-col-right .footer-socials{justify-content:flex-start;}.footer-copy{text-align:center;}}
 </style>
 
 <div class="arch-header">
-    <span class="arch-badge">v1.1.0</span>
+    <span class="arch-badge">v1.2.0 · premium studio</span>
     <h1>selva vision</h1>
     <p>engenharia de prompts para visualização arquitetônica de alto padrão</p>
 </div>
 """, unsafe_allow_html=True)
 
-# ── dicionários de dados em minúsculas ────────────────────────────────────────
+# ── dicionários de dados ──────────────────────────────────────────────────────
 ROOMS = {
     "quarto suíte": {
         "en": "bedroom suite",
@@ -144,32 +141,27 @@ RESOLUTION_EN = {"4k nativo":"4K native resolution","hd":"HD resolution"}
 RATIO_EN = {"16:9 (paisagem)":"16:9 aspect ratio","9:16 (vertical)":"9:16 aspect ratio","1:1 (quadrado)":"1:1 aspect ratio"}
 THINKING_EN = {"máxima qualidade":"highly detailed, masterpiece","iteração rápida":"fast concept render"}
 
-# ── ecossistema selva urbana (novos dicionários) ─────────────────────────────
+# ── ecossistema selva urbana ─────────────────────────────────────────────────
 SUSTENTABILIDADE_EN = {"painéis solares integrados": "architecturally integrated solar panels with precise roof continuity", "telhado verde": "lush green roof system", "cisterna de captação": "architectural rainwater harvesting cistern", "brises ecológicos": "sustainable solar shading brises"}
 BIOFILIA_EN = {"jardim de inverno": "indoor winter garden with dense tropical biophilia", "piscina natural": "natural pool with biological filtration and organic pebble borders", "horta integrada": "integrated organic herb garden", "vegetação pendente": "cascading biophilic elements from ceiling"}
 AUTOMACAO_EN = {"painel inteligente minimalista": "minimalist smart home automation wall panels", "iluminação circadiana": "circadian rhythm smart lighting integration", "climatização invisível": "invisible linear slot diffusers for climate control"}
 
 
-# ── histórico ─────────────────────────────────────────────────────────────────
+# ── histórico de sessão seguro (isolado por usuário) ──────────────────────────
 def load_history() -> List[Dict[str, str]]:
-    try:
-        if os.path.exists(HISTORY_FILE):
-            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except: pass
-    return []
+    if "prompt_history" not in st.session_state:
+        st.session_state.prompt_history = []
+    return st.session_state.prompt_history
 
 def save_history(entry: Dict[str, str]) -> None:
-    h = load_history(); h.insert(0, entry)
-    try:
-        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(h[:100], f, ensure_ascii=False, indent=2)
-    except: pass
+    if "prompt_history" not in st.session_state:
+        st.session_state.prompt_history = []
+    st.session_state.prompt_history.insert(0, entry)
+    # mantemos apenas os últimos 100 por questões de memória do navegador
+    st.session_state.prompt_history = st.session_state.prompt_history[:100]
 
 def clear_history() -> None:
-    try:
-        if os.path.exists(HISTORY_FILE): os.remove(HISTORY_FILE)
-    except: pass
+    st.session_state.prompt_history = []
 
 def init(k: str, v: Any) -> None:
     if k not in st.session_state:
@@ -180,18 +172,22 @@ init("extra_furn_count", 0)
 # ── motor de prompt otimizado (fluido e natural) ─────────────────────────────
 def build_prompt() -> str:
     room_key = st.session_state.get("w_room", list(ROOMS.keys())[0])
-    room_en = ROOMS.get(room_key, {}).get("en", "space")
+    
+    if room_key == "outro":
+        room_en = st.session_state.get("w_room_custom", "").strip() or "space"
+    else:
+        room_en = ROOMS.get(room_key, {}).get("en", "space")
 
     style_raw = st.session_state.get("w_style", "moderno contemporâneo")
     style_en = STYLE_EN.get(style_raw, style_raw) if style_raw != "outro" else st.session_state.get("w_style_custom", "").strip()
 
-    # Base e Ponto de vista
+    # base e ponto de vista
     vp_raw = st.session_state.get("w_viewpoint", "nível do olho (eye-level)")
     vp_en = VIEWPOINT_EN.get(vp_raw, "") if vp_raw != "outro" else st.session_state.get("w_viewpoint_custom", "").strip()
     
     prompt = f"An architectural interior photography from a {vp_en} of a {room_en}, featuring {style_en} design."
 
-    # Contexto e Localização
+    # contexto e localização
     ctx = []
     if loc := st.session_state.get("w_location", "").strip(): ctx.append(f"located in {loc}")
     topo_map = {"plana":"flat terrain","costeira":"coastal terrain","rural isolada":"isolated rural landscape"}
@@ -202,18 +198,23 @@ def build_prompt() -> str:
     if special := st.session_state.get("w_special", "").strip():
         prompt += f" Unique architectural features include {special}."
 
-    # Luz (Essencial para fotorrealismo)
+    # luz (essencial para fotorrealismo)
     light_raw = st.session_state.get("w_light", "luz natural clara")
     light_desc, kelvin = LIGHTING_EN.get(light_raw, ("clear bright daylight", ""))
     if light_raw == "outro": light_desc = st.session_state.get("w_light_custom", "").strip()
     if kc := st.session_state.get("w_kelvin_custom", "").strip(): kelvin = kc
     
     light_str = f"The atmosphere is defined by {light_desc}" + (f" at {kelvin}" if kelvin else "")
+    
     extras_luz = [AMBIENT_EN.get(x, x) for x in st.session_state.get("w_ambient", []) if x != "outro"]
+    if "outro" in st.session_state.get("w_ambient", []):
+        custom_amb = st.session_state.get("w_ambient_custom", "").strip()
+        if custom_amb: extras_luz.append(custom_amb)
+        
     if extras_luz: light_str += f", enhanced by {', '.join(extras_luz)}"
     prompt += f" {light_str}."
 
-    # Materialidade
+    # materialidade
     floor_raw = st.session_state.get("w_floor", "")
     floor_en = FLOOR_EN.get(floor_raw, floor_raw) if floor_raw != "outro" else st.session_state.get("w_floor_custom", "").strip()
     wall_raw = st.session_state.get("w_walls", "")
@@ -224,12 +225,12 @@ def build_prompt() -> str:
     elif floor_en or wall_en:
         prompt += f" The space features {floor_en or wall_en}."
 
-    # Metais
+    # metais
     metals_raw = st.session_state.get("w_metals", [])
     m_en = [METALS_EN.get(m, m) for m in metals_raw if m != "outro"]
     if m_en: prompt += f" Hardware and accent details are finished in {', '.join(m_en)}."
 
-    # Adição de Sustentabilidade, Biofilia e Automação (Selva DNA)
+    # adição de sustentabilidade, biofilia e automação (selva dna)
     eco_raw = st.session_state.get("w_eco", [])
     eco_en = [SUSTENTABILIDADE_EN.get(e, e) for e in eco_raw]
     bio_raw = st.session_state.get("w_bio", [])
@@ -241,26 +242,31 @@ def build_prompt() -> str:
     if selva_elements:
         prompt += f" Integrating state-of-the-art systems and nature, the design includes {', '.join(selva_elements)}."
 
-    # Mobiliário
+    # mobiliário
     fp = []
-    for fkey, fdata in ROOMS.get(room_key, {}).get("furniture", {}).items():
-        val = st.session_state.get(f"w_furn_{fkey}", "")
-        if val not in ("", "não incluir"):
-            en_val = fdata.get("en_map", {}).get(val, val) if val != "outro" else st.session_state.get(f"w_furn_{fkey}_custom", "").strip()
-            if en_val: fp.append(en_val)
+    if room_key != "outro":
+        for fkey, fdata in ROOMS.get(room_key, {}).get("furniture", {}).items():
+            val = st.session_state.get(f"w_furn_{fkey}", "")
+            if val not in ("", "não incluir"):
+                en_val = fdata.get("en_map", {}).get(val, val) if val != "outro" else st.session_state.get(f"w_furn_{fkey}_custom", "").strip()
+                if en_val: fp.append(en_val)
             
     for i in range(st.session_state.get("extra_furn_count", 0)):
         if v := st.session_state.get(f"w_extra_furn_{i}", "").strip(): fp.append(v)
         
     if fp: prompt += f" It is beautifully furnished with {', '.join(fp)}."
 
-    # Detalhes Humanos
+    # detalhes humanos
     if human := st.session_state.get("w_human", "").strip():
         prompt += f" Lived-in details like {human} add a sense of realism."
 
-    # Fotografia e Câmera
-    focal = FOCAL_EN.get(st.session_state.get("w_focal", ""), "")
-    dof = DOF_EN.get(st.session_state.get("w_dof", ""), "")
+    # fotografia e câmera
+    focal_raw = st.session_state.get("w_focal", "")
+    focal = FOCAL_EN.get(focal_raw, "") if focal_raw != "outro" else st.session_state.get("w_focal_custom", "").strip()
+    
+    dof_raw = st.session_state.get("w_dof", "")
+    dof = DOF_EN.get(dof_raw, "") if dof_raw != "outro" else st.session_state.get("w_dof_custom", "").strip()
+    
     cam = CAMERA_EN.get(st.session_state.get("w_camera", ""), "")
     res = RESOLUTION_EN.get(st.session_state.get("w_resolution", "4k nativo"), "4K native resolution")
     ratio = RATIO_EN.get(st.session_state.get("w_ratio", "16:9 (paisagem)"), "16:9 aspect ratio")
@@ -270,7 +276,7 @@ def build_prompt() -> str:
     if tech: prompt += f" Captured using {', '.join(tech)}."
     prompt += f" {think}, {res}, {ratio}, photorealistic architectural visualization, masterpiece."
 
-    # TRAVA DE SEGURANÇA E FIDELIDADE TÉCNICA
+    # trava de segurança e fidelidade técnica
     prompt += " CRITICAL INSTRUCTION: Strictly maintain the original architectural modeling and structural roof continuity. Do not alter or distort the base geometry. Do not add unrequested light fixtures or luminaires. Hardware must be exact as described."
 
     neg_base = "altered modeling, fake lighting, unrequested luminaires, structural changes, generic faucets, 3d look, plastic textures, distorted geometry"
@@ -292,9 +298,14 @@ with tab_builder:
 
     with col_form:
         st.markdown('<div class="layer-label"><span class="layer-num">1</span> sujeito do projeto</div>', unsafe_allow_html=True)
-        init("w_room", list(ROOMS.keys())[0])
-        st.selectbox("tipo de ambiente", list(ROOMS.keys()), key="w_room")
+        room_opts = list(ROOMS.keys()) + ["outro"]
+        init("w_room", room_opts[0])
+        st.selectbox("tipo de ambiente", room_opts, key="w_room")
         selected_room = st.session_state["w_room"]
+        
+        if selected_room == "outro":
+            init("w_room_custom", "")
+            st.text_input("descrever ambiente", key="w_room_custom", placeholder="ex: adega subterrânea, hall de entrada...")
 
         style_opts = list(STYLE_EN.keys())
         init("w_style", style_opts[0])
@@ -328,67 +339,92 @@ with tab_builder:
             st.markdown('<div class="layer-label"><span class="layer-num">3</span> composição e câmera</div>', unsafe_allow_html=True)
             vp_opts = list(VIEWPOINT_EN.keys())
             init("w_viewpoint", vp_opts[0])
-            st.selectbox("ponto de vista", vp_opts, key="w_viewpoint")
+            st.selectbox("ponto de vista", vp_opts, key="w_viewpoint", help="define o ângulo da câmera. 'nível do olho' traz realismo imersivo, enquanto 'vista aérea' ajuda a entender o layout geral do espaço.")
+            if st.session_state["w_viewpoint"] == "outro":
+                init("w_viewpoint_custom", "")
+                st.text_input("descrever: ponto de vista", key="w_viewpoint_custom")
 
             focal_opts = list(FOCAL_EN.keys())
             init("w_focal", focal_opts[1])
-            st.selectbox("distância focal", focal_opts, key="w_focal")
+            st.selectbox("distância focal", focal_opts, key="w_focal", help="simula a lente da câmera. 24mm (angular) mostra mais do ambiente mas pode distorcer as bordas. 35mm ou 50mm são ideais para manter as proporções reais da arquitetura.")
+            if st.session_state["w_focal"] == "outro":
+                init("w_focal_custom", "")
+                st.text_input("descrever: distância focal", key="w_focal_custom")
 
             dof_opts = list(DOF_EN.keys())
             init("w_dof", dof_opts[1])
-            st.selectbox("profundidade de campo", dof_opts, key="w_dof")
+            st.selectbox("profundidade de campo", dof_opts, key="w_dof", help="controla o desfoque de fundo. 'profunda' mantém tudo nítido (ideal para arquitetura geral), enquanto 'rasa' foca em um detalhe e desfoca o resto.")
+            if st.session_state["w_dof"] == "outro":
+                init("w_dof_custom", "")
+                st.text_input("descrever: profundidade de campo", key="w_dof_custom")
             st.markdown("<hr class='section-sep'>", unsafe_allow_html=True)
 
         if modo_pro:
             st.markdown('<div class="layer-label"><span class="layer-num">4</span> arquitetura da luz</div>', unsafe_allow_html=True)
             light_opts = list(LIGHTING_EN.keys())
             init("w_light", light_opts[2])
-            st.selectbox("luz principal", light_opts, key="w_light")
+            st.selectbox("luz principal", light_opts, key="w_light", help="define o clima do render. 'dia nublado' cria luz difusa perfeita para materiais e texturas, enquanto 'golden hour' traz sombras longas e aconchego.")
+            if st.session_state["w_light"] == "outro":
+                init("w_light_custom", "")
+                st.text_input("descrever: luz principal", key="w_light_custom")
 
             init("w_kelvin_custom", "")
-            st.text_input("temperatura de cor (opcional)", key="w_kelvin_custom", placeholder="ex: 3000k")
+            st.text_input("temperatura de cor (opcional)", key="w_kelvin_custom", placeholder="ex: 3000k", help="medida em kelvin. valores baixos (ex: 2700k) deixam a luz mais quente e amarelada. valores altos (ex: 6500k) deixam a cena mais fria e azulada.")
 
             ambient_opts = list(AMBIENT_EN.keys())
             init("w_ambient", [])
-            st.multiselect("iluminação ambiente", ambient_opts, key="w_ambient")
+            st.multiselect("iluminação ambiente", ambient_opts, key="w_ambient", help="luzes secundárias que preenchem as sombras e dão volume e profundidade para a imagem gerada.")
+            if "outro" in st.session_state["w_ambient"]:
+                init("w_ambient_custom", "")
+                st.text_input("descrever: iluminação ambiente", key="w_ambient_custom")
             st.markdown("<hr class='section-sep'>", unsafe_allow_html=True)
 
         st.markdown('<div class="layer-label"><span class="layer-num">5</span> materialidade e mobiliário</div>', unsafe_allow_html=True)
         floor_opts = [""] + list(FLOOR_EN.keys())
         init("w_floor", "")
         st.selectbox("piso principal", floor_opts, key="w_floor")
+        if st.session_state["w_floor"] == "outro":
+            init("w_floor_custom", "")
+            st.text_input("descrever: piso principal", key="w_floor_custom")
 
         wall_opts = [""] + list(WALL_EN.keys())
         init("w_walls", "")
         st.selectbox("revestimento de parede", wall_opts, key="w_walls")
+        if st.session_state["w_walls"] == "outro":
+            init("w_walls_custom", "")
+            st.text_input("descrever: revestimento de parede", key="w_walls_custom")
 
-        room_data = ROOMS.get(selected_room, {})
-        if furniture_data := room_data.get("furniture", {}):
-            st.markdown(f'<div class="furn-label">mobiliário — {selected_room}</div>', unsafe_allow_html=True)
-            for fkey, fdata in furniture_data.items():
-                furn_opts = ["não incluir"] + fdata["options"]
-                init(f"w_furn_{fkey}", "não incluir")
-                st.selectbox(fdata["label"], furn_opts, key=f"w_furn_{fkey}")
-                if st.session_state[f"w_furn_{fkey}"] == "outro":
-                    init(f"w_furn_{fkey}_custom", "")
-                    st.text_input(f"descrever: {fdata['label']}", key=f"w_furn_{fkey}_custom")
+        st.markdown(f'<div class="furn-label">mobiliário — {selected_room}</div>', unsafe_allow_html=True)
+        
+        # carrega móveis padrão apenas se NÃO for "outro"
+        if selected_room != "outro":
+            room_data = ROOMS.get(selected_room, {})
+            if furniture_data := room_data.get("furniture", {}):
+                for fkey, fdata in furniture_data.items():
+                    furn_opts = ["não incluir"] + fdata["options"]
+                    init(f"w_furn_{fkey}", "não incluir")
+                    st.selectbox(fdata["label"], furn_opts, key=f"w_furn_{fkey}")
+                    if st.session_state[f"w_furn_{fkey}"] == "outro":
+                        init(f"w_furn_{fkey}_custom", "")
+                        st.text_input(f"descrever: {fdata['label']}", key=f"w_furn_{fkey}_custom")
 
-            count = st.session_state.get("extra_furn_count", 0)
-            for i in range(count):
-                c1, c2 = st.columns([5, 1])
-                with c1:
-                    init(f"w_extra_furn_{i}", "")
-                    st.text_input(f"item adicional {i+1}", key=f"w_extra_furn_{i}", placeholder="ex: tapete persa")
-                with c2:
-                    st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-                    if st.button("✕", key=f"rm_{i}"):
-                        for j in range(i, count - 1): st.session_state[f"w_extra_furn_{j}"] = st.session_state.get(f"w_extra_furn_{j+1}", "")
-                        st.session_state[f"w_extra_furn_{count-1}"] = ""
-                        st.session_state["extra_furn_count"] = max(0, count - 1); st.rerun()
+        # móveis customizados carregam sempre (independente do ambiente)
+        count = st.session_state.get("extra_furn_count", 0)
+        for i in range(count):
+            c1, c2 = st.columns([5, 1])
+            with c1:
+                init(f"w_extra_furn_{i}", "")
+                st.text_input(f"item adicional {i+1}", key=f"w_extra_furn_{i}", placeholder="ex: tapete persa")
+            with c2:
+                st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+                if st.button("✕", key=f"rm_{i}"):
+                    for j in range(i, count - 1): st.session_state[f"w_extra_furn_{j}"] = st.session_state.get(f"w_extra_furn_{j+1}", "")
+                    st.session_state[f"w_extra_furn_{count-1}"] = ""
+                    st.session_state["extra_furn_count"] = max(0, count - 1); st.rerun()
 
-            if count < MAX_EXTRA_FURNITURE:
-                if st.button(f"＋ adicionar item ({count}/{MAX_EXTRA_FURNITURE})"):
-                    st.session_state["extra_furn_count"] = count + 1; st.rerun()
+        if count < MAX_EXTRA_FURNITURE:
+            if st.button(f"＋ adicionar item ({count}/{MAX_EXTRA_FURNITURE})"):
+                st.session_state["extra_furn_count"] = count + 1; st.rerun()
 
         init("w_human", "")
         st.text_input("elementos de humanização (opcional)", key="w_human", placeholder="ex: livros abertos")
@@ -411,26 +447,27 @@ with tab_builder:
             st.markdown('<div class="layer-label"><span class="layer-num">7</span> metadados técnicos</div>', unsafe_allow_html=True)
             cam_opts = list(CAMERA_EN.keys())
             init("w_camera", "nenhum")
-            st.selectbox("equipamento fotográfico", cam_opts, key="w_camera")
+            st.selectbox("equipamento fotográfico", cam_opts, key="w_camera", help="força a ia a simular a granulação, a paleta de cores e o nível de textura dos sensores de câmeras profissionais reais de alto padrão.")
 
             col_r, col_ra = st.columns(2)
             with col_r:
                 init("w_resolution", "4k nativo")
-                st.selectbox("resolução", list(RESOLUTION_EN.keys()), key="w_resolution")
+                st.selectbox("resolução", list(RESOLUTION_EN.keys()), key="w_resolution", help="adiciona metadados de fidelidade para garantir bordas nítidas na arquitetura e ausência de ruídos na imagem.")
             with col_ra:
                 init("w_ratio", "16:9 (paisagem)")
-                st.selectbox("proporção", list(RATIO_EN.keys()), key="w_ratio")
+                st.selectbox("proporção", list(RATIO_EN.keys()), key="w_ratio", help="formato de corte do render. 16:9 é excelente para visualização em telas e apresentações, enquanto 9:16 é o formato vertical ideal para reels e stories do instagram.")
 
             init("w_thinking", "máxima qualidade")
-            st.selectbox("modo de processamento", list(THINKING_EN.keys()), key="w_thinking")
+            st.selectbox("modo de processamento", list(THINKING_EN.keys()), key="w_thinking", help="tags finais de instrução que orientam o modelo gerador sobre a complexidade e o grau de polimento artístico do resultado final.")
 
             init("w_negative", "")
-            st.text_area("prompt negativo adicional", key="w_negative", height=70, placeholder="ex: distorção, pessoas")
+            st.text_area("prompt negativo adicional", key="w_negative", height=70, placeholder="ex: distorção, pessoas", help="o que a ia deve PROIBIR. nossa programação base já bloqueia distorções estruturais e luzes falsas, mas você pode adicionar mais elementos indesejados aqui (ex: reflexos ruins, pessoas, plantas mortas).")
 
     with col_prompt:
         prompt = build_prompt()
         st.markdown('<div class="prompt-panel"><div class="prompt-live-label"><span>prompt em tempo real</span></div></div>', unsafe_allow_html=True)
-        edited = st.text_area("prompt gerado (editável):", value=prompt, height=360, key="w_prompt_out")
+        # removi a chave (key) para permitir que a caixa atualize "ao vivo" quando as opções mudarem
+        edited = st.text_area("prompt gerado (editável):", value=prompt, height=360)
         st.markdown(f'<div class="meta-count">{len(edited.split())} palavras · {len(edited)} caracteres</div>', unsafe_allow_html=True)
 
         st.markdown("<div style='font-family:\"Inter\",sans-serif; font-size:0.7rem; color:#8C8881; margin-top: 10px;'>cópia rápida:</div>", unsafe_allow_html=True)
@@ -454,6 +491,41 @@ with tab_history:
 
         for i, entry in enumerate(history):
             prm = entry.get("prompt", "")
+            # blindagem contra injeção de script (xss)
+            prm_safe = html.escape(prm)
             with st.expander(f"{entry.get('timestamp','')} — {entry.get('ambiente','')} · {entry.get('estilo','')}", expanded=(i==0)):
-                st.markdown(f'<div class="hist-prompt">{prm}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="hist-prompt">{prm_safe}</div>', unsafe_allow_html=True)
                 st.code(prm, language="text")
+
+# ── rodapé fixo ───────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="footer-container">
+    <div class="footer-col">
+        <div>
+            <div class="footer-title">contato</div>
+            <div class="footer-text">selvaurbanaprojetos@gmail.com</div>
+            <div class="footer-text">55 51 99251-4815</div>
+            <div class="footer-text">55 51 98088-6131</div>
+        </div>
+        <div>
+            <div class="footer-title">redes sociais</div>
+            <div class="footer-socials">
+                <a href="https://wa.me/5551992514815" target="_blank" title="whatsapp"><i class="fab fa-whatsapp"></i></a>
+                <a href="https://br.pinterest.com/selvaurbana_/" target="_blank" title="pinterest"><i class="fab fa-pinterest"></i></a>
+                <a href="https://instagram.com/selva.urb" target="_blank" title="instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://facebook.com/selvaurbanaprojetos" target="_blank" title="facebook"><i class="fab fa-facebook"></i></a>
+                <a href="https://linkedin.com/company/selvaurbanaprojetos" target="_blank" title="linkedin"><i class="fab fa-linkedin"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-col footer-col-right">
+        <div>
+            <div class="footer-title">localização</div>
+            <div class="footer-text">av. benjamin constant, 1194</div>
+            <div class="footer-text">ed. diamond center, sala 702</div>
+            <div class="footer-text">cep 95900-056, lajeado/rs</div>
+        </div>
+    </div>
+</div>
+<div class="footer-copy">© 2026 selva urbana ltda. todos os direitos reservados.</div>
+""", unsafe_allow_html=True)
